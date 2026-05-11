@@ -1,6 +1,6 @@
 # outlook-watchdog
 
-Workaround for a bug in **New Outlook for Mac** (v16.110+) where closing the main window (⌘W) and clicking the dock icon to reopen it causes **zombie windows and WebKit process leaks** that grow unboundedly until Outlook is force-quit.
+Monitoring tool for a bug in **New Outlook for Mac** (v16.110+) where closing the main window (⌘W) and clicking the dock icon to reopen it causes **zombie windows and WebKit process leaks** that grow unboundedly until Outlook is force-quit.
 
 ## The Bug
 
