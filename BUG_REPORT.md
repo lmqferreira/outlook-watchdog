@@ -1,8 +1,10 @@
-## Bug: New Outlook for Mac leaks hidden windows and WebKit processes on every close/reopen cycle
+## Bug: New Outlook for Mac intermittently leaks hidden windows and WebKit processes on close/reopen cycles
 
 ### Summary
 
-New Outlook for Mac (v16.110, macOS 15+) has a window lifecycle bug where closing the main window (⌘W) and reopening via dock click causes unbounded accumulation of hidden zombie windows and orphaned WebKit WebContent processes. Each cycle leaks approximately 120 MB of RAM. The leaked resources are never released until the application is fully quit (⌘Q).
+New Outlook for Mac (v16.110, macOS 15+) has an intermittent window lifecycle bug where closing the main window (⌘W) and reopening via dock click causes unbounded accumulation of hidden zombie windows and orphaned WebKit WebContent processes. Each cycle leaks approximately 120 MB of RAM. The leaked resources are never released until the application is fully quit (⌘Q).
+
+The bug is session-dependent: some Outlook sessions exhibit the leak on every close/reopen cycle, while others handle it correctly (⌘W destroys the window, dock-click creates a clean new one). The trigger for entering the buggy state is unknown. Once active in a session, every subsequent close/reopen cycle leaks.
 
 ### Environment
 

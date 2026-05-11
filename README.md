@@ -1,16 +1,20 @@
 # outlook-watchdog
 
-Monitoring tool for a bug in **New Outlook for Mac** (v16.110+) where closing the main window (⌘W) and clicking the dock icon to reopen it causes **zombie windows and WebKit process leaks** that grow unboundedly until Outlook is force-quit.
+Monitoring tool for an **intermittent** bug in **New Outlook for Mac** (v16.110+) where closing the main window (⌘W) and clicking the dock icon to reopen it causes **zombie windows and WebKit process leaks** that grow unboundedly until Outlook is force-quit.
+
+> **Note:** This bug is not 100% reproducible. It appears to be session-dependent — some Outlook sessions exhibit the leak on every close/reopen cycle, while others handle it correctly. The trigger for entering the buggy state is unknown. This tool helps capture evidence when the bug is active.
 
 ## The Bug
 
-When using New Outlook for Mac (`IsRunningNewOutlook = 1`):
+When using New Outlook for Mac (`IsRunningNewOutlook = 1`), **intermittently**:
 
 1. **⌘W hides the window** instead of destroying it — the window object and its WebContent process stay alive
 2. **Clicking the dock icon** creates a **brand new window** instead of restoring the hidden one
 3. **Old windows are never released** — not even via AppleScript `close`
 4. Each close/reopen cycle leaks **~2-4 hidden windows**, **1-2 WebKit processes**, and **~120 MB of RAM**
 5. Eventually, `applicationShouldHandleReopen:hasVisibleWindows:` **stops working entirely** — clicking the dock icon does nothing
+
+When the bug is **not** active, ⌘W properly destroys the window and dock-click creates a fresh one with no accumulation.
 
 ### Evidence
 
@@ -43,17 +47,63 @@ It polls Outlook via AppleScript, classifies windows (main/companion/reminder), 
 git clone https://github.com/lmqferreira/outlook-watchdog.git
 cd outlook-watchdog
 swift build -c release
-cp .build/release/outlook-watchdog /usr/local/bin/
 ```
 
 ## Usage
 
 ```bash
 # Run in a terminal
-outlook-watchdog
+.build/release/outlook-watchdog
 
 # Custom polling interval (default: 5 seconds)
-outlook-watchdog --interval 3
+.build/release/outlook-watchdog --interval 3
+```
+
+### Run at Login (LaunchAgent)
+
+To collect long-running evidence, install as a LaunchAgent:
+
+```bash
+# Copy binary to a stable location
+mkdir -p ~/.local/bin
+cp .build/release/outlook-watchdog ~/.local/bin/
+
+# Create the LaunchAgent plist (update the path to your binary)
+cat > ~/Library/LaunchAgents/com.github.outlook-watchdog.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.github.outlook-watchdog</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>REPLACE_WITH_YOUR_HOME/.local/bin/outlook-watchdog</string>
+        <string>--interval</string>
+        <string>10</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>
+EOF
+
+# Load it
+launchctl load ~/Library/LaunchAgents/com.github.outlook-watchdog.plist
+```
+
+Logs are written to `~/Library/Logs/outlook-watchdog.log` (appended, never overwritten).
+
+```bash
+# View live log
+tail -f ~/Library/Logs/outlook-watchdog.log
+
+# Stop the service
+launchctl unload ~/Library/LaunchAgents/com.github.outlook-watchdog.plist
 ```
 
 ### Options
