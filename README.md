@@ -90,6 +90,29 @@ The New Outlook for Mac is a WebKit-based app. Its `windowWillClose:` handler hi
 
 Classic Outlook (legacy/native) does not exhibit this bug, but Microsoft is deprecating it and modern M365 auth no longer works with it.
 
+## Why Not Auto-Fix?
+
+We exhaustively tested every programmatic method to close zombie windows. **All of them fail.**
+
+| Method | Result |
+|--------|--------|
+| AppleScript `close` | Silently ignored |
+| `set visible to true` then `close` | Silently ignored |
+| AppleScript `delete` | Error (-1728) |
+| `close saving no` | Silently ignored |
+| JXA `close()` | Silently ignored |
+| `close window id <N>` | Silently ignored |
+| ⌘W keystroke via System Events | Window hides again (not destroyed) |
+| Make visible + ⌘W keystroke | Window hides again (not destroyed) |
+| AXCloseButton click via Accessibility | Window count unchanged |
+| `set miniaturized` toggle | No effect |
+| ScriptingBridge `closeSaving` | No effect |
+| ObjC `performClose:` | Cannot access another process's NSWindows |
+
+The New Outlook's WebKit windows override all standard NSWindow close mechanisms. The `windowShouldClose:` delegate (or equivalent) vetoes destruction and sets `visible = false` instead.
+
+**The only way to free zombie windows is ⌘Q and relaunch.**
+
 ## Requirements
 
 - macOS 13+

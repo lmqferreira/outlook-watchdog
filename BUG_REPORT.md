@@ -66,7 +66,19 @@ The application binary at `/Applications/Microsoft Outlook.app/Contents/MacOS/Mi
 
 Window enumeration via AppleScript (`tell application "Microsoft Outlook" to get windows`) confirms that closed windows persist with `visible = false`. These windows have valid IDs, names (e.g., "Inbox • user@example.com"), and are fully retained in memory. Each hidden window retains its associated `com.apple.WebKit.WebContent` XPC process.
 
-AppleScript `close` commands targeting these windows by ID are silently ignored — the windows remain in the window list with no change in state.
+AppleScript `close` commands targeting these windows by ID are silently ignored — the windows remain in the window list with no change in state. Every other programmatic close method was also tested and failed:
+
+- AppleScript `close`, `close saving no`, `delete`, `close window id <N>` — all silently ignored
+- JXA (JavaScript for Automation) `close()` — silently ignored
+- Make visible then close — silently ignored
+- ⌘W keystroke via System Events — window hides again instead of being destroyed
+- Make visible + ⌘W keystroke — window hides again
+- Accessibility API AXCloseButton click — window count unchanged
+- `set miniaturized` toggle — no effect
+- ScriptingBridge `closeSaving` — no effect
+- ObjC `performClose:` — cannot access another process's NSWindows
+
+The window's `windowShouldClose:` delegate (or equivalent) vetoes destruction in all cases and falls back to setting `visible = false`. There is no programmatic way to free zombie windows from outside the application.
 
 Classic Outlook (legacy, non-WebKit) does not exhibit this behavior. However, Classic Outlook can no longer authenticate with Microsoft 365 Exchange accounts, making it not a viable workaround.
 
