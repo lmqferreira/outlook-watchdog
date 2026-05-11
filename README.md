@@ -40,7 +40,7 @@ It polls Outlook via AppleScript, classifies windows (main/companion/reminder), 
 
 ```bash
 # Build from source
-git clone https://github.com/<your-username>/outlook-watchdog.git
+git clone https://github.com/lmqferreira/outlook-watchdog.git
 cd outlook-watchdog
 swift build -c release
 cp .build/release/outlook-watchdog /usr/local/bin/
